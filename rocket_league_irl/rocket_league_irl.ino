@@ -6,7 +6,7 @@
 
 // Neo-pixel colors
 byte neo_red = 0;
-byte neo_green = 255;
+byte neo_green = 0;
 byte neo_blue = 0;
 
 

@@ -11,11 +11,11 @@
 void isr_encoder() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  if ((interruptTime - lastInterruptTime > 250) && (LCD_screen_old == LCD_screen)) {
+  if ( interruptTime - lastInterruptTime > 100 ) {
     if (digitalRead(Dt) == LOW) {
-      LCD_screen--;
+      alpha_case += 1;
     } else {
-      LCD_screen++;
+      alpha_case -= 1;
     }
     // wrap lcd screen around...
     // if (LCD_screen > num_LCD_screens) {
@@ -24,7 +24,7 @@ void isr_encoder() {
     // if (LCD_screen < 0) {
     //   LCD_screen = num_LCD_screens;
     // }
-    LCD_screen = constrain(LCD_screen, 1, num_LCD_screens);  // Cap screens at limits
+    alpha_case = constrain(alpha_case, 1, 3);  // Cap screens at limits
   }
   lastInterruptTime = interruptTime;
 }

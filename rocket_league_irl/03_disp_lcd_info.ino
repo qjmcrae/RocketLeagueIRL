@@ -81,9 +81,13 @@ void Main_Screen() {  //
   lcd.setCursor(9,1);
   lcd.print(esc_command);
   lcd.setCursor(0,2);
-  lcd.print("Velocity:            ");
+  lcd.print("Velocity:          ");
   lcd.setCursor(9,2);
   lcd.print(velocity);
+  lcd.setCursor(0,3);
+  lcd.print("alpha:    ");
+  lcd.setCursor(7,3);
+  lcd.print(alpha);
   // lcd.print();
   lcd.setCursor(10, 1);
 

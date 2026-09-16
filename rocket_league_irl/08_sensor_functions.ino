@@ -38,3 +38,31 @@ float get_lidar_data() {
     dist_lidar_ft = float(dist_cm) / 2.54 / 12.0;  // Returns the distance in feet
   return dist_lidar_ft;
 }  //End of get_lidar_data
+
+// ************************      ************************//
+
+float speed(float distance_o, float distance_f, float last_velocity) {
+
+  float dy = distance_f - distance_o;
+  float raw_velocity = constrain(dy * 100, -50, 50);
+  // constrain clips data at that boundary
+  alpha = .95;  // smoothing factor
+  if (alpha_case == 1) alpha = 0.05;
+  else if (alpha_case == 2) alpha = 0.5;
+  float filtered_velocity = alpha * (last_velocity) + (1 - alpha) * (raw_velocity);  // helps eliminate sensor noise or abrupt stops for passing objects i.e. vehicles
+  //                        alpha% of the last velocity + (100-alpha)% of new data
+  Serial.print("Filtered:");
+  Serial.print(filtered_velocity);
+  Serial.print(",");
+  Serial.print("Raw:");
+  Serial.print(raw_velocity);
+  Serial.print(",");
+  Serial.print("max:");
+  Serial.print(50);
+  Serial.print(",");
+  Serial.print("min:");
+  Serial.println(-50);
+  Serial.print(",");
+
+  return filtered_velocity;
+}

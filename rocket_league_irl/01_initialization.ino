@@ -49,8 +49,8 @@ int esc_max_top_speed = max_signal_throttle;
 
 // define distances (in feet) for car to slow down...
 // THESE NEED TO BE STUDIED!!!!
-int close_dist = 2;  // this would mean after something is this close or closer, it is as "slowed down" as we will go
-int far_dist = 6;   // this is the distance where we start slowing down, any further away and we are at max allowable throttle
+int close_dist = 3;  // this would mean after something is this close or closer, it is as "slowed down" as we will go
+int far_dist = 8;   // this is the distance where we start slowing down, any further away and we are at max allowable throttle
 
 //=============== Initialize Variables ================//
 // Setup program-level stuff, i.e. timers, etc.
@@ -66,6 +66,8 @@ bool beeped = 0;
 volatile byte LCD_screen = 1;
 byte LCD_screen_old = 0;
 byte num_LCD_screens = 6;
+float alpha = .95;
+volatile byte alpha_case = 1;
 
 int neo_delay = 100;
 unsigned long neo_time = 0;
@@ -95,6 +97,13 @@ bool team;
 float dist_lidar_ft;
 int throttle_pulse;
 
+// wall avoidance and braking
+static float vel_last = 0;
+static float si = 0;
+static float sf = 0;
+static bool nobrake = 0;
+float velocity;
+
 //=============== Initialize Libraries ================//
 // Include Libraries, Setup objects, modules, etc.
 //=====================================================//
@@ -104,7 +113,7 @@ int throttle_pulse;
 
 // Setup Neo-pixel LED array
 #include <Adafruit_NeoPixel.h>
-Adafruit_NeoPixel neo_pixel = Adafruit_NeoPixel(8, pixel_pin, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel neo_pixel = Adafruit_NeoPixel(64, pixel_pin, NEO_GRB + NEO_KHZ800);
 
 //Setup LCD Screen
 #include <LiquidCrystal_I2C.h>
