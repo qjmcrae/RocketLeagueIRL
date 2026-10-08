@@ -52,7 +52,7 @@ void Title_Screen() {  // Title screen
   //2       sub_name[]
   //3     course_name[]
   lcd.setCursor(0, 0);
-  lcd.print(F("   GPS Guided Car "));
+  lcd.print(F("  RocketLeagueIRL   "));
   lcd.setCursor(0, 1);
   lcd.print("Team: ");
   lcd.print(team);

@@ -72,12 +72,13 @@ volatile byte alpha_case = 1;
 int neo_delay = 100;
 unsigned long neo_time = 0;
 
+// display output info
 byte disp_freq = 2;  // in hz
 int disp_delay = 1000 / disp_freq;
 unsigned long disp_time = 0;
 
-// Are these needed?
-float calc_dist_freq = 0.5;  // in hz
+// distanc calculation info
+int calc_dist_freq = 8;  // in hz
 long calc_dist_delay = 1000 / calc_dist_freq;
 unsigned long calc_dist_time = 0;
 
@@ -98,11 +99,8 @@ float dist_lidar_ft;
 int throttle_pulse;
 
 // wall avoidance and braking
-static float vel_last = 0;
-static float si = 0;
-static float sf = 0;
-static bool nobrake = 0;
 float velocity;
+
 
 //=============== Initialize Libraries ================//
 // Include Libraries, Setup objects, modules, etc.

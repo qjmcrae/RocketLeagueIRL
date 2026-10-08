@@ -7,7 +7,7 @@ void setup() {
   Wire.begin();
   Serial.begin(115200);
   //Serial.println("Ice Hockey RC Car!");
- 
+
 
   pinMode(Clk, INPUT);                // D2
   pinMode(Dt, INPUT);                 // D3
@@ -22,7 +22,7 @@ void setup() {
   // pinMode(batt_cell_1_pin, INPUT);  // A0
   // pinMode(batt_volt_pin, INPUT);    // A1
 
-  attachInterrupt(digitalPinToInterrupt(Clk), isr_encoder, LOW);  //D2
+  attachInterrupt(digitalPinToInterrupt(Clk), isr_encoder, FALLING);  //D2
 
 
   // initialize servos
@@ -63,7 +63,7 @@ void setup() {
 
   team = digitalRead(team_pin);
   if (team) neo_red = 100;
-  else  neo_blue = 100;
+  else neo_blue = 100;
   for (int j = 0; j < 64; j++) {
     neo_pixel.setPixelColor(j, neo_pixel.Color(neo_red, neo_green, neo_blue));
   }
@@ -94,41 +94,28 @@ void setup() {
 void loop()  //
 {
 
-  // get distance from LIDAR sensor
-  dist_lidar_ft = get_lidar_data();
-  // Serial.print(20);
-  // Serial.print(" ");
-  // Serial.print(0);
-  // Serial.print(" ");
-  // //Serial.print("dist = ");
-  // Serial.print(dist_lidar_ft);
+  if (millis() > calc_dist_time) {
+    // get distance from LIDAR sensor, calculate velocity
+    dist_lidar_ft = get_lidar_data();
+    velocity = calc_speed(dist_lidar_ft);  // speed output
+  }
 
-  sf = dist_lidar_ft;
-  velocity = speed(si, sf, vel_last);  // speed output
-  //Serial.print("Vel_last = ");
-  // Serial.print(vel_last);
-  // Serial.print("   Velocity = ");
-  // Serial.print(velocity);
-  // Serial.print("   si = ");
-  // Serial.print(si);
-  // Serial.print("    sf = ");
-  // Serial.print(sf);
-  // Serial.println();
-
-  vel_last = velocity;
-
-  si = sf;
   // set max throttle signal based on current lidar distance - idea is that is top speed, used below to proportionally pick speed
-  static bool inertia = 0;                                       // flag for abs-like system
-  if (dist_lidar_ft <= 10 && velocity <= -15 && nobrake == 0) {  // limit speed based on velocity and distance
+  static bool collision_reduction = 0;  // Flag for Collision Reduction                   // flag for abs-like system
+  static bool braking_complete = 0;     // Flag indicating auto-braking is complete?
+
+  float max_velocity_collision = -2.0;  // closing speed at which point we get nervous / respond
+
+  if (dist_lidar_ft <= 10 && velocity <= max_velocity_collision)  // close and closing fast...
+  {
+    // map max speed based on lidar distance - basically slow down max speed if you are too close (and fast)
     max_signal_throttle = constrain(map(dist_lidar_ft, close_dist, far_dist, esc_min_top_speed, esc_max_top_speed), esc_min_top_speed, esc_max_top_speed);
-    inertia = 1;
-  } else if (nobrake == 1) {
-    max_signal_throttle = constrain(map(dist_lidar_ft, close_dist, far_dist, esc_min_top_speed, esc_max_top_speed), esc_min_top_speed, esc_max_top_speed);
-  } else  // overall top speed available
+    if (braking_complete == 0) collision_reduction = 1;
+  }     //
+  else  // we're either not close, or not closing fast, so allow top speed
   {
     max_signal_throttle = esc_max_top_speed;
-    inertia = 0;
+    collision_reduction = 0;  // disable any collision reduction logic
   }
 
   //  update servo command every so often ...
@@ -137,18 +124,9 @@ void loop()  //
     throttle_pulse = pulseIn(esc_in_pin, HIGH, 35000);
     if (throttle_pulse != 0)  // make sure to have a measurement
     {
-      // this is NOT functional, but the idea is to slowly turn back min/max values in case there is anomolous reading
-      // max_pulse_throttle -= 1;
-      // min_pulse_throttle += 1;
       max_pulse_throttle = constrain(max(max_pulse_throttle, throttle_pulse), 1700, 2200);
       min_pulse_throttle = constrain(min(min_pulse_throttle, throttle_pulse), 900, 1200);
     }
-    // adjust min/max if outside original range
-    // if (throttle_pulse > max_pulse_throttle) max_pulse_throttle = throttle_pulse;
-    // if (throttle_pulse < min_pulse_throttle && throttle_pulse > 300) min_pulse_throttle = throttle_pulse;
-
-    // Serial.print("    throttle_pulse = ");
-    // Serial.print(throttle_pulse);
 
     throttle_command = 0;
     if (throttle_pulse != 0)  // only do this if we have a value...
@@ -169,56 +147,47 @@ void loop()  //
     //  The mapping above still allows the numbers to over-write the limits - this fixes the high
     //  and low signals to not go over the limits ...
 
-    // Braking code
     esc_command = constrain(esc_command, min_signal_throttle, max_signal_throttle);
+
+    // Braking code - we're spoofing the "double-pump" braking system
+    // if someone wants reverse, first send a quick "blip" of braking, then neutral, then back
+    //   to braking so as to go in reverse
     static bool brake_disabled = 0;
     if (throttle_command < -10 && brake_disabled == 0) {
       esc_servo.write(min_signal_throttle);
       delay(75);
       esc_servo.write(neutral_pulse_throttle);
       delay(75);
-      brake_disabled = 1;
+      brake_disabled = 1;  // don't do this again until forward command is given
     } else if (throttle_command > 0) {
       brake_disabled = 0;
     }
 
     // close to wall case
 
-    if (inertia == 1 && velocity > -15) {
-      nobrake = 1;
-    } else if (inertia == 1 && esc_command >= neutral_pulse_throttle + 25 && nobrake == 0) {  // abs-like functionality
-      esc_servo.write(min_pulse_throttle);
+    // Flag Definitions:
+    // braking_complete - flag to determine if we should auto-brake as we get close to something...
+    // collision_reduction - flag to enter collision reduction logic
+
+    if (collision_reduction == 1 && velocity > max_velocity_collision) {
+      braking_complete = 1;
+    }  //
+    // else if (collision_reduction == 1 && esc_command >= neutral_pulse_throttle + 25 && braking_complete == 0) {  // abs-like functionality
+    else if (collision_reduction == 1 && throttle_command >= 0 && braking_complete == 0) {  // auto-braking functionality ??
+                                                                                            //           collision flag on       have forward throttle     still need to brake
+      esc_servo.write(min_pulse_throttle);                                                  // send a pulse of braking for 0.1 sec...
       delay(100);
-    } else if (dist_lidar_ft > 10 & nobrake == 1) {
-      inertia = 0;
-      nobrake = 0;
+    }                                                        //
+    else if (dist_lidar_ft > 10 && braking_complete == 1) {  // you are far away, and no need to auto-brake
+      collision_reduction = 0;
+      braking_complete = 0;
     }
 
-
-
-
     esc_servo.write(esc_command);
-    servo_write_time = servo_write_time + servo_write_delay;
-
-    // Serial.print(", ESC = ");
-    // Serial.print(esc_command);
-
-    // Serial.print(", max_throttle = ");
-    // Serial.print(max_signal_throttle);
-
-    // Serial.print(", throttle_command = ");
-    // Serial.print(throttle_command);
-
-    // Serial.print(", brake_disabled = ");
-    // Serial.print(brake_disabled);
-
-    //Serial.println();
+    servo_write_time += servo_write_delay;
   }
 
-  unsigned long now = millis();
-  //  if (now > neo_time) neo_design(1);
-  // neo_design(2000);
-  if (now > disp_time || LCD_screen_old != LCD_screen)
+  if (millis() > disp_time || LCD_screen_old != LCD_screen)
     disp_lcd_info();  // display info to LCD screen
 
 }  // end of loop

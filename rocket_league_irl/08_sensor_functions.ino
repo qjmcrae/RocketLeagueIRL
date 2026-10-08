@@ -36,33 +36,46 @@ float get_lidar_data() {
   float dist_lidar_ft;
   if (luna.getData(dist_cm, TFL_DEF_ADR))          // Gets distance data from lidar sensor in cm
     dist_lidar_ft = float(dist_cm) / 2.54 / 12.0;  // Returns the distance in feet
+
+  calc_dist_time += calc_dist_delay;
   return dist_lidar_ft;
 }  //End of get_lidar_data
 
 // ************************      ************************//
 
-float speed(float distance_o, float distance_f, float last_velocity) {
+float calc_speed(float dist_current) {
+  static float velocity_prev;
+  static float dist_prev;
 
-  float dy = distance_f - distance_o;
-  float raw_velocity = constrain(dy * 100, -50, 50);
-  // constrain clips data at that boundary
-  alpha = .95;  // smoothing factor
-  if (alpha_case == 1) alpha = 0.05;
-  else if (alpha_case == 2) alpha = 0.5;
-  float filtered_velocity = alpha * (last_velocity) + (1 - alpha) * (raw_velocity);  // helps eliminate sensor noise or abrupt stops for passing objects i.e. vehicles
-  //                        alpha% of the last velocity + (100-alpha)% of new data
+  float vel_lim = 10.0;
+  float dy = dist_current - dist_prev;
+  // speed = delta_distance / delta_time
+  // delta_y = new_dist - old_dist
+  // delta_x = change in time - being called at x Hz, so divided by 1/x is multiplying by x, or by frequency (in Hz)
+  float raw_velocity = constrain(dy * calc_dist_freq, -vel_lim, vel_lim);  // This should be in feet/sec
+
+
+  alpha = 0.5;  // smoothing factor
+  // alpha = 0.95;  // smoothing factor
+  // if (alpha_case == 1) alpha = 0.05;
+  // else if (alpha_case == 2) alpha = 0.5;
+
+  // filter velocity with old velocity...
+  float filtered_velocity = alpha * (velocity_prev) + (1 - alpha) * (raw_velocity);  // helps eliminate sensor noise or abrupt stops for passing objects i.e. vehicles
+
+  velocity_prev = filtered_velocity;
+  dist_prev = dist_current;
+
   Serial.print("Filtered:");
   Serial.print(filtered_velocity);
-  Serial.print(",");
-  Serial.print("Raw:");
+  Serial.print(", Raw:");
   Serial.print(raw_velocity);
-  Serial.print(",");
-  Serial.print("max:");
-  Serial.print(50);
-  Serial.print(",");
-  Serial.print("min:");
-  Serial.println(-50);
-  Serial.print(",");
+  Serial.print(", max:");
+  Serial.print(vel_lim);
+  Serial.print(", min:");
+  Serial.print(-vel_lim);
+
+  Serial.println();
 
   return filtered_velocity;
 }
