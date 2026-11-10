@@ -144,19 +144,19 @@ void loop()  //
       brake_disabled = 0;
     }
 
-    if (time_to_impact < TTI_threshold && throttle_command > 10) // impact is imminent, and still have a positive forward command.  If not (i.e. just sitting there), don't want it to slam into reverse!
-    {
-      esc_command = min_pulse_throttle;  // min_pulse_throttle is full brake
-    }
+    // If impact is imminent, AND there is a positive throttle command, AND closing speed is high enough
+    // to pontentially cause damage, hit the brakes...
+    if (time_to_impact < TTI_threshold && throttle_command > 10 && closing_speed > closing_speed_threshold) esc_command = min_pulse_throttle;  // min_pulse_throttle is full brake
 
+    // whatever was calculated, now send it to the ESC
     esc_servo.write(esc_command);
-   
+
     // for debugging purposes - beep if in brake/reverse
     if (esc_command < neutral_pulse_throttle)
       digitalWrite(buzzer_pin, 1);
     else
       digitalWrite(buzzer_pin, 0);
-   
+
     servo_write_time += servo_write_delay;
   }
 

@@ -92,6 +92,7 @@ int throttle_pulse;
 float closing_speed;
 float time_to_impact = 999;
 volatile float TTI_threshold = 1.0;
+float closing_speed_threshold = 1.5;
 
 
 
