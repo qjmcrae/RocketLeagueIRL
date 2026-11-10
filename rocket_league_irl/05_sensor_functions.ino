@@ -44,15 +44,16 @@ float get_lidar_data() {
 // ************************      ************************//
 
 float calc_speed(float dist_current) {
-  static float velocity_prev;
+  static float speed_prev;
   static float dist_prev;
 
   float vel_lim = 10.0;
-  float dy = dist_current - dist_prev;
+  // changed order - want positive closing speed to be positive
+  float dy = dist_prev - dist_current;
   // speed = delta_distance / delta_time
   // delta_y = new_dist - old_dist
   // delta_x = change in time - being called at x Hz, so divided by 1/x is multiplying by x, or by frequency (in Hz)
-  float raw_velocity = constrain(dy * calc_dist_freq, -vel_lim, vel_lim);  // This should be in feet/sec
+  float raw_speed = constrain(dy * calc_dist_freq, -vel_lim, vel_lim);  // This should be in feet/sec
 
 
   alpha = 0.5;  // smoothing factor
@@ -60,16 +61,16 @@ float calc_speed(float dist_current) {
   // if (alpha_case == 1) alpha = 0.05;
   // else if (alpha_case == 2) alpha = 0.5;
 
-  // filter velocity with old velocity...
-  float filtered_velocity = alpha * (velocity_prev) + (1 - alpha) * (raw_velocity);  // helps eliminate sensor noise or abrupt stops for passing objects i.e. vehicles
+  // filter closing_speed with old speed...
+  float filtered_speed = alpha * (speed_prev) + (1 - alpha) * (raw_speed);  // helps eliminate sensor noise or abrupt stops for passing objects i.e. vehicles
 
-  velocity_prev = filtered_velocity;
+  speed_prev = filtered_speed;
   dist_prev = dist_current;
 
   Serial.print("Filtered:");
-  Serial.print(filtered_velocity);
+  Serial.print(filtered_speed);
   Serial.print(", Raw:");
-  Serial.print(raw_velocity);
+  Serial.print(raw_speed);
   Serial.print(", max:");
   Serial.print(vel_lim);
   Serial.print(", min:");
@@ -77,5 +78,5 @@ float calc_speed(float dist_current) {
 
   Serial.println();
 
-  return filtered_velocity;
+  return filtered_speed;
 }

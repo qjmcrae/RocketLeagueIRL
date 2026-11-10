@@ -12,20 +12,17 @@ void disp_lcd_info() {
   }
 
   switch (LCD_screen) {
-    case 1:  // Title screen
+    case 0:  // Title screen
       Title_Screen();
       break;
-    case 2:  // Main Screen
+    case 1:  // Main Screen
       Main_Screen();
       break;
-    // case 3:  // Position Information
-    //   Position_Screen();
-    //   break;
+    case 2:  // Position Information
+      Collision_Screen();
+      break;
     // case 4:  // Radio Information
     //   Radio_Screen();
-    //   break;
-    // case 5:  // Environmental Information
-    //   Environment_Screen();
     //   break;
     // case 6:  // Battery Information
     //   Battery_Screen();
@@ -41,37 +38,30 @@ void disp_lcd_info() {
 
 
 
-// ************************   "******"_SCREEN   ************************//
+// ****************************************************//
 
 // Specific Screen layouts
 
 void Title_Screen() {  // Title screen
   //   01234567890123456789
-  //0     GPS Guided Car
-  //1      team_name[]
-  //2       sub_name[]
-  //3     course_name[]
+  //0     
+  //1     
+  //2     
+  //3     
   lcd.setCursor(0, 0);
   lcd.print(F("  RocketLeagueIRL   "));
   lcd.setCursor(0, 1);
   lcd.print("Team: ");
   lcd.print(team);
-  // lcd.setCursor(0, 2);
-  // lcd.print(sub_name);
-  // lcd.setCursor(0, 3);
-  // lcd.print(course_name);
 }
 
 void Main_Screen() {  //
   // Main Screen
   //   01234567890123456789
   //0
-  //1  LIDAR:####
-  //2  Hdg ### GPS### Sat##
-  //3  Dist ##m  ##:##:##ampm
-  //   01234567890123456789
-  //0  ###mph Alt ### D ###
-  //1  LIDAR:####
+  //1  
+  //2  
+  //3  
   lcd.setCursor(0, 0);
   lcd.print(F("Dist:         "));
   lcd.setCursor(5,0);
@@ -81,41 +71,39 @@ void Main_Screen() {  //
   lcd.setCursor(9,1);
   lcd.print(esc_command);
   lcd.setCursor(0,2);
-  lcd.print("Velocity:          ");
+  lcd.print("speed:          ");
   lcd.setCursor(9,2);
-  lcd.print(velocity);
+  lcd.print(closing_speed);
   lcd.setCursor(0,3);
   lcd.print("alpha:    ");
   lcd.setCursor(7,3);
   lcd.print(alpha);
-  // lcd.print();
   lcd.setCursor(10, 1);
 
 }
 
-// void Radio_Screen() {  // Radio Information
-//   //   01234567890123456789
-//   //0     Servo/ESC Info
-//   //1  ESC Cmd: ###
-//   //2  Steer Cmd: ###
-//   //3  Heading Error:  ###
-//   lcd.setCursor(0, 0);
-//   lcd.print(F("   Servo/ESC Info   "));
-//   lcd.setCursor(0, 1);
-//   lcd.print(F("ESC Cmd:            "));
-//   lcd.setCursor(10, 1);
-//   lcd.print(esc_command);
-//   lcd.setCursor(0, 2);
-//   lcd.print(F("Steer Cmd:          "));
-//   lcd.setCursor(10, 2);
-//   lcd.print(servo_command);
-//   lcd.setCursor(0, 3);
-//   lcd.print(F("Heading Error:      "));
-//   byte i = 14;
-//   if (heading_error < 0) i = i - 1;
-//   lcd.setCursor(i, 3);
-//   lcd.print(heading_error);
-// }
+void Collision_Screen() {  // Radio Information
+  //   01234567890123456789
+  //0  
+  //1  
+  //2  
+  //3  
+
+  lcd.setCursor(0, 0);
+  lcd.print(F("Collision/Reduction "));
+  lcd.setCursor(0,1);
+  lcd.print(F("Min:      Max:      "));
+  lcd.setCursor(4,1);
+  lcd.print(min_pulse_throttle);
+  lcd.setCursor(14,1);
+  lcd.print(max_pulse_throttle);
+  lcd.setCursor(0,2);
+  lcd.print(F("TTI:     Thresh:    "));
+  lcd.setCursor(4,2);
+  lcd.print(time_to_impact);
+  lcd.setCursor(16,2);
+  lcd.print(TTI_threshold);
+}
 
 // void Battery_Screen() {  // Battery Information
 //   //   01234567890123456789
